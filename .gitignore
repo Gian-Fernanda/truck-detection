@@ -1,0 +1,97 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual Environments & Packages
+venv/
+venv/**
+[Vv]env/
+[Vv]env/**
+.venv/
+.venv/**
+env/
+ENV/
+Lib/
+Include/
+Scripts/
+**/site-packages/**
+env.bak/
+venv.bak/
+
+
+# YOLO & Model Weights (File Besar)
+models/*.pt
+models/*.pth
+models/*.onnx
+models/*.engine
+models/*.tflite
+models/*.bin
+*.pt
+*.pth
+*.onnx
+*.engine
+
+# Don't ignore .gitkeep
+!models/.gitkeep
+!data/.gitkeep
+
+# Output CSV logs & Data (optional)
+# data/*.csv
+
+# Ultralytics Training Outputs / Runs
+runs/
+*.log
+
+# Media / Rekaman Video
+*.mp4
+*.avi
+*.mkv
+*.mov
+*.webm
+
+# IDE / Editors
+.idea/
+.vscode/
+*.swp
+*.swo
+*.sublime-project
+*.sublime-workspace
+
+# OS Generated Files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+# Environment Variables & Secrets
+.env
+.env.*
+!.env.example
