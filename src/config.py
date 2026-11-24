@@ -9,7 +9,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 @dataclass
 class AppConfig:
     # --- Input Source ---
-    source: str = r"C:\Users\ADVAN\Videos\Captures\cyy.mp4"  # Path file video atau RTSP URL
+    source: str = r"C:\Users\Gian Fernanda\Downloads\tesboy.mp4"  # Path file video atau RTSP URL
     is_live: bool = False                                   # False = file video, True = RTSP / CCTV live
     
     # --- Model & Detection Settings ---

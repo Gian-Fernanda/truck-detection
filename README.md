@@ -1,6 +1,28 @@
-# Container Yard (CY) Vehicle Detection & Tracking
+# Container Yard (CY) Vehicle Detection & Monitoring Web Dashboard
 
-Sistem cerdas berbasis **YOLOv8 + ByteTrack** untuk mendeteksi, melacak, dan mencatat waktu tinggal (*stay duration*) kendaraan truk/kontainer yang masuk dan keluar di area Container Yard (CY).
+Sistem cerdas berbasis **YOLOv8 + ByteTrack** dengan **Interactive Real-time Web Dashboard** untuk mendeteksi, melacak, memvisualisasikan, dan mencatat waktu tinggal (*stay duration*) armada truk/kontainer yang masuk dan keluar di area Container Yard (CY).
+
+---
+
+## ✨ Fitur Web Dashboard
+
+1. **🔴 Live Video Stream & AI Tracking**:
+   - Streaming video / RTSP CCTV real-time (~30 FPS) dengan overlay Bounding Box dan Polygon Zona CY.
+   - Indikator live status, FPS counter, dan resolusi video.
+2. **📊 Real-time KPI Summary Cards**:
+   - **Truk di CY Saat Ini**: Jumlah kendaraan yang sedang berada di dalam batas zona CY.
+   - **Total Truk Masuk**: Akumulasi seluruh kendaraan yang terdeteksi masuk.
+   - **Total Truk Keluar**: Kendaraan yang sudah selesai masa tinggal.
+   - **Rata-rata Durasi Stay**: Rata-rata waktu tinggal kendaraan dalam menit.
+3. **📈 Grafik Tren Kepadatan (Occupancy Trend)**:
+   - Visualisasi kurva real-time tren volume truk di CY menggunakan Chart.js.
+4. **📝 Live Event Logs Feed**:
+   - Catatan waktu nyata setiap kejadian truk masuk dan keluar dengan label warna dan timestamp.
+5. **📋 Tabel Riwayat & Filter Kendaraan**:
+   - Pencarian No. Truk dan status (Aktif / Sudah Keluar).
+   - Tombol **Export CSV** untuk mengunduh riwayat lengkap.
+6. **🖌️ Atur Zona CY Interaktif di Web**:
+   - Tombol *"Atur Zona CY"* memungkinkan Anda menggambar polygon batas area CY langsung dengan klik mouse di atas canvas video!
 
 ---
 
@@ -14,7 +36,7 @@ vehicle-detection/
 │   ├── botsort_cy.yaml             # Parameter tracker BoTSORT (opsional)
 │   └── cy_zone.json                # Koordinat polygon zona CY
 │
-├── data/                           # Data hasil deteksi & log CSV
+├── data/                           # Direktori hasil log & CSV
 │   └── riwayat_truk_cy.csv         # Catatan No. Truk, Jenis, Jam Masuk/Keluar, & Durasi Stay
 │
 ├── models/                         # Model weights YOLO (.pt, .onnx, dll)
@@ -23,14 +45,26 @@ vehicle-detection/
 │
 ├── src/                            # Source code modular
 │   ├── __init__.py
-│   ├── config.py                   # Pengaturan terpusat (path, threshold, timing)
-│   ├── zone.py                     # Manajemen polygon area CY & tool gambar interaktif
-│   ├── tracker.py                  # Logika asosiasi ID, penggabungan kabin-trailer & timeout
-│   └── visualizer.py               # Render bounding box, label ID, dan panel HUD
+│   ├── config.py                   # Centralized configuration (parameter, path, timing)
+│   ├── zone.py                     # Manajemen polygon area CY
+│   ├── tracker.py                  # Logika tracking & pemisahan truk berdekatan
+│   ├── visualizer.py               # Render bounding box, label ID, dan HUD panel
+│   ├── engine.py                   # Worker background video processing & telemetry
+│   └── web_server.py               # Built-in lightweight HTTP & MJPEG live stream server
 │
-├── main.py                         # Entry point utama aplikasi
-├── requirements.txt                # Daftar dependensi Python
-├── .gitignore                      # Konfigurasi file yang diabaikan Git
+├── static/                         # Aset Frontend Dashboard
+│   ├── css/
+│   │   └── style.css               # Design system glassmorphism modern
+│   └── js/
+│       └── app.js                  # Client telemetry polling, canvas drawing & Chart.js
+│
+├── templates/
+│   └── index.html                  # Halaman Web Dashboard
+│
+├── main.py                         # Entry point utama (Web Dashboard & Desktop GUI)
+├── app.py                          # Shortcut runner khusus Web Dashboard
+├── requirements.txt                # Dependensi project
+├── .gitignore                      # Konfigurasi Git ignore
 └── README.md                       # Dokumentasi project
 ```
 
@@ -38,22 +72,23 @@ vehicle-detection/
 
 ## 🚀 Cara Menjalankan
 
-### 1. Jalankan Program Utama
+### 1. Jalankan Mode Web Dashboard (Rekomendasi)
 ```bash
 python main.py
 ```
-
-### 2. Kontrol Saat Program Berjalan
-- **`Q`**: Keluar dari aplikasi.
-- **`Z`**: Menggambar ulang area polygon zona CY langsung di jendela video.
+atau:
+```bash
+python app.py
+```
+Buka browser Anda dan akses:
+👉 **[http://localhost:5000](http://localhost:5000)** atau **[http://127.0.0.1:5000](http://127.0.0.1:5000)**
 
 ---
 
-## ⚙️ Pengaturan & Kustomisasi (`src/config.py`)
-
-Anda dapat mengubah parameter deteksi dan video di file [`src/config.py`](file:///c:/Users/ADVAN/project/vehicle-detection/src/config.py):
-- `source`: Path video lokal (contoh: `r"C:\path\to\video.mp4"`) atau RTSP stream CCTV.
-- `is_live`: Set ke `True` jika menggunakan CCTV / RTSP real-time.
-- `model_path`: Model YOLO yang digunakan (misalnya `yolov8m.pt` atau `yolov8n.pt`).
-- `exit_timeout_seconds`: Durasi toleransi (detik) sebelum truk dianggap keluar dari area CY setelah hilang dari pandangan.
-- `merge_gap_ratio` & `min_overlap_ratio`: Ambang batas pemisahan truk berdekatan vs penggabungan kabin-trailer.
+### 2. Jalankan Mode Desktop OpenCV GUI (Opsional)
+Jika ingin menjalankan tampilan jendela OpenCV desktop standar:
+```bash
+python main.py --gui
+```
+- Tekan **`Q`** untuk berhenti dan menyimpan data.
+- Tekan **`Z`** untuk menggambar ulang polygon zona CY.

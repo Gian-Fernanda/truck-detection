@@ -1,6 +1,7 @@
 import os
 import sys
 import time
+import argparse
 import cv2
 from ultralytics import YOLO
 
@@ -8,28 +9,27 @@ from src.config import AppConfig
 from src.zone import ZoneManager
 from src.tracker import VehicleTracker
 from src.visualizer import Visualizer
+from src.engine import VideoEngine
+from src.web_server import start_web_server
 
 
-def main():
-    cfg = AppConfig()
-
-    print("=" * 50)
-    print("  VEHICLE DETECTION & TRACKING SYSTEM (CY)")
-    print("=" * 50)
+def run_gui(cfg: AppConfig):
+    """Menjalankan monitoring dengan tampilan OpenCV Desktop Window."""
+    print("=" * 60)
+    print("  VEHICLE DETECTION & TRACKING SYSTEM (DESKTOP GUI)")
+    print("=" * 60)
     print(f"Model: {cfg.model_path}")
     print(f"Sumber Video: {cfg.source}")
-    print(f"Mode Live: {cfg.is_live}")
 
     # 1. Inisialisasi Zona CY
     zone_mgr = ZoneManager(cfg.zone_file)
     if not zone_mgr.is_loaded():
-        print("[INFO] Zona CY belum ada atau belum dikonfigurasi.")
-        print("[INFO] Membuka jendela untuk menggambar zona...")
+        print("[INFO] Zona CY belum ada. Menggambar zona interaktif...")
         if not zone_mgr.draw_interactive(cfg.source):
             print("[ERROR] Gagal mengatur zona CY. Program dihentikan.")
             return
 
-    # 2. Inisialisasi Model YOLO & Video Capture
+    # 2. Inisialisasi Model & Capture
     if not os.path.exists(cfg.model_path):
         print(f"[ERROR] File model tidak ditemukan di: {cfg.model_path}")
         return
@@ -58,7 +58,7 @@ def main():
             frame_idx += 1
             current_time = (time.time() - t0) if cfg.is_live else (frame_idx / fps)
 
-            # 3. Jalankan YOLO Tracking dengan ByteTrack
+            # YOLO Tracking ByteTrack
             results = model.track(
                 frame,
                 persist=True,
@@ -69,20 +69,16 @@ def main():
                 verbose=False,
             )[0]
 
-            # 4. Kumpulkan raw detections
             raw_detections = []
             if results.boxes is not None and results.boxes.id is not None:
                 ids = results.boxes.id.int().tolist()
                 boxes = results.boxes.xyxy.tolist()
                 classes = results.boxes.cls.int().tolist()
-
                 for tid, box, cls_id in zip(ids, boxes, classes):
                     raw_detections.append((tid, tuple(box), cls_id))
 
-            # 5. Update tracker logic (penggabungan kabin-trailer & pemisahan truk berdekatan)
             tracked_vehicles = tracker.update(raw_detections, current_time)
 
-            # 6. Render visualisasi
             display_frame = frame.copy()
             visualizer.draw_zone(display_frame, zone_mgr.polygon)
             visualizer.draw_vehicles(display_frame, tracked_vehicles)
@@ -95,23 +91,48 @@ def main():
 
             cv2.imshow("CY Vehicle Detection & Tracking", display_frame)
 
-            # 7. Kontrol Keyboard
             key = cv2.waitKey(1) & 0xFF
-            if key == ord("q") or key == ord("Q"):
-                print("[INFO] Program dihentikan oleh pengguna.")
+            if key in (ord("q"), ord("Q")):
+                print("[INFO] Dihentikan oleh pengguna.")
                 break
-            elif key == ord("z") or key == ord("Z"):
+            elif key in (ord("z"), ord("Z")):
                 cv2.destroyWindow("CY Vehicle Detection & Tracking")
-                print("[INFO] Menggambar ulang zona CY...")
                 zone_mgr.draw_interactive(cfg.source)
 
-    except KeyboardInterrupt:
-        print("\n[INFO] Dibatalkan oleh pengguna (Ctrl+C).")
     finally:
         tracker.close()
         cap.release()
         cv2.destroyAllWindows()
-        print(f"[INFO] Selesai. Riwayat tersimpan di: {cfg.csv_file}")
+        print(f"[INFO] Riwayat tersimpan di: {cfg.csv_file}")
+
+
+def run_web(cfg: AppConfig, host: str = "0.0.0.0", port: int = 5000):
+    """Menjalankan monitoring langsung di Web Dashboard Browser (Default)."""
+    engine = VideoEngine(cfg)
+    engine.start()
+    try:
+        start_web_server(engine, host=host, port=port)
+    finally:
+        engine.stop()
+
+
+def main():
+    parser = argparse.ArgumentParser(description="CY Vehicle Monitoring System")
+    parser.add_argument(
+        "--gui",
+        action="store_true",
+        help="Jalankan dalam mode Desktop OpenCV GUI (default: Web Dashboard)",
+    )
+    parser.add_argument("--port", type=int, default=5000, help="Port untuk Web Dashboard (default: 5000)")
+    parser.add_argument("--host", type=str, default="0.0.0.0", help="Host untuk Web Dashboard (default: 0.0.0.0)")
+    args = parser.parse_args()
+
+    cfg = AppConfig()
+
+    if args.gui:
+        run_gui(cfg)
+    else:
+        run_web(cfg, host=args.host, port=args.port)
 
 
 if __name__ == "__main__":

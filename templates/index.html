@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Container Yard Vehicle Detection and Tracking Dashboard with YOLOv8 & ByteTrack">
+    <title>CY Vehicle Monitoring Dashboard | YOLOv8 + ByteTrack</title>
+
+    <!-- Google Fonts: Outfit & Inter & JetBrains Mono -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Chart.js CDN for live occupancy analytics -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Top Navigation Bar -->
+        <header class="navbar">
+            <div class="brand-section">
+                <div class="brand-logo">
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="1" y="3" width="15" height="13"></rect>
+                        <polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon>
+                        <circle cx="5.5" cy="18.5" r="2.5"></circle>
+                        <circle cx="18.5" cy="18.5" r="2.5"></circle>
+                    </svg>
+                </div>
+                <div class="brand-text">
+                    <h1>CY TRUCK MONITORING</h1>
+                    <span class="brand-sub">YOLOv8 + ByteTrack Intelligent Vision System</span>
+                </div>
+            </div>
+
+            <div class="navbar-actions">
+                <div class="status-badge" id="live-status-badge">
+                    <span class="pulse-dot"></span>
+                    <span id="status-text">LIVE STREAMING</span>
+                </div>
+                <div class="meta-badge" id="fps-badge">
+                    <span class="label">FPS</span>
+                    <span class="value" id="val-fps">0.0</span>
+                </div>
+                <div class="meta-badge" id="res-badge">
+                    <span class="label">RES</span>
+                    <span class="value" id="val-res">--x--</span>
+                </div>
+                <a href="/api/export_csv" class="btn btn-secondary" id="btn-export-csv" title="Download Riwayat CSV">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="7 10 12 15 17 10"></polyline>
+                        <line x1="12" y1="15" x2="12" y2="3"></line>
+                    </svg>
+                    <span>Export CSV</span>
+                </a>
+            </div>
+        </header>
+
+        <!-- KPI Summary Cards Grid -->
+        <section class="kpi-grid">
+            <div class="kpi-card active-card">
+                <div class="kpi-header">
+                    <span class="kpi-title">Truk di CY Saat Ini</span>
+                    <div class="kpi-icon icon-cyan">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="1" y="3" width="15" height="13"></rect>
+                            <polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon>
+                            <circle cx="5.5" cy="18.5" r="2.5"></circle>
+                            <circle cx="18.5" cy="18.5" r="2.5"></circle>
+                        </svg>
+                    </div>
+                </div>
+                <div class="kpi-body">
+                    <span class="kpi-value" id="kpi-active">0</span>
+                    <span class="kpi-unit">Unit Aktif</span>
+                </div>
+                <div class="kpi-footer">
+                    <span class="kpi-trend positive">● Terdeteksi di dalam batas polygon CY</span>
+                </div>
+            </div>
+
+            <div class="kpi-card">
+                <div class="kpi-header">
+                    <span class="kpi-title">Total Truk Masuk</span>
+                    <div class="kpi-icon icon-green">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M15 3h6v6"></path>
+                            <path d="M10 14L21 3"></path>
+                            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                        </svg>
+                    </div>
+                </div>
+                <div class="kpi-body">
+                    <span class="kpi-value" id="kpi-total-in">0</span>
+                    <span class="kpi-unit">Kendaraan</span>
+                </div>
+                <div class="kpi-footer">
+                    <span class="kpi-meta">Akumulasi sesi berjalan</span>
+                </div>
+            </div>
+
+            <div class="kpi-card">
+                <div class="kpi-header">
+                    <span class="kpi-title">Total Truk Keluar</span>
+                    <div class="kpi-icon icon-amber">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M9 21H3v-6"></path>
+                            <path d="M14 10l-11 11"></path>
+                            <path d="M6 11V5a2 2 0 0 1 2-2h11a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2h-6"></path>
+                        </svg>
+                    </div>
+                </div>
+                <div class="kpi-body">
+                    <span class="kpi-value" id="kpi-total-out">0</span>
+                    <span class="kpi-unit">Kendaraan</span>
+                </div>
+                <div class="kpi-footer">
+                    <span class="kpi-meta">Selesai masa tinggal</span>
+                </div>
+            </div>
+
+            <div class="kpi-card">
+                <div class="kpi-header">
+                    <span class="kpi-title">Rata-rata Durasi Stay</span>
+                    <div class="kpi-icon icon-purple">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <polyline points="12 6 12 12 16 14"></polyline>
+                        </svg>
+                    </div>
+                </div>
+                <div class="kpi-body">
+                    <span class="kpi-value" id="kpi-avg-stay">0.0</span>
+                    <span class="kpi-unit">Menit</span>
+                </div>
+                <div class="kpi-footer">
+                    <span class="kpi-meta">Waktu rata-rata di area CY</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Main Dashboard Content Grid -->
+        <main class="dashboard-layout">
+            <!-- Left Column: Video Stream & Telemetry Chart -->
+            <div class="stream-column">
+                <!-- Video Player Card -->
+                <div class="card video-card">
+                    <div class="card-header">
+                        <div class="card-title-group">
+                            <h2 class="card-title">CCTV Live Stream & Tracking</h2>
+                            <span class="card-subtitle">AI Detection Bounding Boxes & CY Zone Polygon</span>
+                        </div>
+                        <div class="card-actions">
+                            <button id="btn-draw-zone" class="btn btn-sm btn-outline">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M12 20h9"></path>
+                                    <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+                                </svg>
+                                <span>Atur Zona CY</span>
+                            </button>
+                            <button id="btn-fullscreen" class="btn btn-sm btn-icon" title="Fullscreen">
+                                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="video-container" id="video-wrapper">
+                        <img src="/video_feed" alt="CY Video Feed" class="video-stream" id="video-feed" onerror="handleStreamError()">
+                        
+                        <!-- Canvas overlay for interactive zone drawing -->
+                        <canvas id="zone-canvas" class="zone-canvas"></canvas>
+
+                        <!-- Zone Drawing Toolbar (Hidden by default) -->
+                        <div class="zone-toolbar" id="zone-toolbar">
+                            <div class="toolbar-info">
+                                <span>🖌️ Mode Gambar Zona CY: Klik pada video untuk menentukan titik polygon</span>
+                                <span class="points-counter" id="points-counter">0 Titik</span>
+                            </div>
+                            <div class="toolbar-buttons">
+                                <button id="btn-zone-reset" class="btn btn-sm btn-danger">Reset Titik</button>
+                                <button id="btn-zone-cancel" class="btn btn-sm btn-secondary">Batal</button>
+                                <button id="btn-zone-save" class="btn btn-sm btn-primary">Simpan Zona</button>
+                            </div>
+                        </div>
+
+                        <!-- Video Stream Overlay Badges -->
+                        <div class="stream-overlay-info">
+                            <span class="overlay-tag" id="tag-zone-status">Zona CY: Aktif</span>
+                            <span class="overlay-tag" id="tag-tracker">Tracker: ByteTrack (CY Mode)</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Telemetry Occupancy Chart Card -->
+                <div class="card chart-card">
+                    <div class="card-header">
+                        <div class="card-title-group">
+                            <h2 class="card-title">Tren Kepadatan Truk di CY</h2>
+                            <span class="card-subtitle">Real-time occupancy trend over time</span>
+                        </div>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="occupancyChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column: Live Event Logs & Vehicle List -->
+            <div class="sidebar-column">
+                <!-- Live Event Logs Feed -->
+                <div class="card logs-card">
+                    <div class="card-header">
+                        <div class="card-title-group">
+                            <h2 class="card-title">Live Log Kejadian</h2>
+                            <span class="card-subtitle">Aktivitas Masuk & Keluar Real-time</span>
+                        </div>
+                        <span class="log-indicator"></span>
+                    </div>
+                    <div class="logs-container" id="logs-container">
+                        <div class="empty-state">Menunggu deteksi kendaraan...</div>
+                    </div>
+                </div>
+
+                <!-- Vehicle History Table Card -->
+                <div class="card table-card">
+                    <div class="card-header">
+                        <div class="card-title-group">
+                            <h2 class="card-title">Daftar Kendaraan CY</h2>
+                            <span class="card-subtitle">Status & Durasi Stay Truk</span>
+                        </div>
+                        <div class="table-search">
+                            <input type="text" id="search-truck" placeholder="Cari No. Truk..." class="input-search">
+                        </div>
+                    </div>
+                    <div class="table-container">
+                        <table class="data-table" id="truck-table">
+                            <thead>
+                                <tr>
+                                    <th>No.</th>
+                                    <th>Jenis</th>
+                                    <th>Masuk (s)</th>
+                                    <th>Durasi (mnt)</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="truck-table-body">
+                                <tr>
+                                    <td colspan="5" class="empty-table-cell">Belum ada data kendaraan.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <div class="footer-left">
+                <span>CY Vehicle Detection & Tracking System • Powered by Ultralytics YOLOv8 & ByteTrack</span>
+            </div>
+            <div class="footer-right">
+                <span class="system-status"><span class="status-indicator-green"></span> Sistem Operasional Normal</span>
+            </div>
+        </footer>
+    </div>
+
+    <!-- JavaScript Application Logic -->
+    <script src="/static/js/app.js"></script>
+</body>
+</html>

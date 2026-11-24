@@ -88,7 +88,9 @@ class VehicleTracker:
         can_a = self.raw_to_canonical.get(raw_id_a)
         can_b = self.raw_to_canonical.get(raw_id_b)
         if can_a is not None and can_b is not None and can_a != can_b:
-            if self.vehicles.get(can_a, {}).get("is_active") and self.vehicles.get(can_b, {}).get("is_active"):
+            veh_a = self.vehicles.get(can_a)
+            veh_b = self.vehicles.get(can_b)
+            if veh_a is not None and veh_b is not None and veh_a.is_active and veh_b.is_active:
                 return False
 
         ax1, ay1, ax2, ay2 = box_a
